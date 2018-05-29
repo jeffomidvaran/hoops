@@ -3,111 +3,104 @@
 #include <time.h>
 #include <stdbool.h>
 #include <limits.h>
+#include <pthread.h>
 
 #define TRUE 1
 #define FALSE 0
 
-typedef struct QUEUE{
-	int front, rear, size; 
-	int capcity; 
-	int * array; 
-} Queue; 
+pthread_mutex_t mutexsum; 
+int scores[100];
 
-Queue * createQueue(int capacity){
-	Queue * queue = (Queue *) malloc(sizeof(Queue));
-	queue->capcity = capacity; 
-	queue->front = queue->size = 0; 
-	queue->rear = capacity -1; 
-	queue->array = (int *) malloc(queue->capcity * sizeof(int));
-	return queue; 
-}
+struct Args{
+	int numberOfShots; 
+	int index; 	
+};
 
-int isFull(Queue * queue){
-	return (queue->size == queue->capcity); 
-}
-
-int isEmpty(Queue * queue){
-	return (queue->size == 0); 
-}
-
-void enqueue(Queue* queue, int item){
-	if(isFull(queue))
-	{
-		return; 
-	}
+void * score(void * a){
 	
-	queue->rear = (queue->rear + 1)%queue->capcity;
-	queue->array[queue->rear] = item;
-	queue->size = queue->size + 1; 
-	printf("%d enqueued to queue\n", item); 
-}
-
-int dequeue(Queue * queue){
-	if(isEmpty(queue))
-	{
-		return INT_MIN;
-	}
-	int item = queue->array[queue->front];
-	queue->front = (queue->front +1)%queue->capcity;
-	queue->size = queue->size -1;
-	return item; 
-}
-
-
-int front(Queue * queue){
-	if(isEmpty(queue))
-	{
-		return INT_MIN;	
-	}
-	return queue->array[queue->front];
-}
-
-int rear(Queue * queue){
-	if(isEmpty(queue)){
-		return INT_MIN;
-	}
+	struct Args * arg = (struct Args * ) a; 
 	
-	return queue->array[queue->rear];
+	
+	bool shotmade = NULL; 
+	bool threePointer = NULL;  
+	srand(time(NULL));
+	
+	pthread_mutex_lock (&mutexsum);
+		for(int i = 0; i<arg->numberOfShots; ++i){
+			shotmade = (rand()%2);
+			threePointer = (rand()%2); 
+			if(shotmade){
+				if(threePointer){
+					scores[arg->index] += 3;
+				}else{
+					scores[arg->index] += 2;
+				}
+			}
+		}
+	pthread_mutex_unlock (&mutexsum); 
+	pthread_exit((void *) 0); 
 }
 
-
-
-typedef enum POINT_VALUE {
-	three, two
-} PointValue; 
 
 int main(int argc, char *argv[]) {
 	(void)argc;
+	void * status;
+	const int numberOfPlayers = atoi(argv[1]); 
+	int numberOfShots = atoi(argv[2]); 
 	
-	int numberOfPlayers = atoi(argv[1]); 
-	int numberOfSeconds = atoi(argv[2]); 
-	Queue * queue = createQueue(numberOfPlayers);
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	// generate a random bool value
-	srand(time(NULL));
-	bool tf = FALSE;
-	tf = (rand()%2);
+	for(int i = 0; i<numberOfPlayers; ++i){
+		scores[i] = 0; 
+	}
 
+	pthread_t threads[numberOfPlayers]; 
+	pthread_attr_t attr; 
+	pthread_mutex_init(&mutexsum, NULL); 
+	pthread_attr_init(&attr); 
+	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE); 
 
+	struct Args * args = malloc(numberOfPlayers * sizeof(args)); 
 
+	for(int i = 0; i<numberOfPlayers; ++i){
+		args[i].index = i; 
+		args[i].numberOfShots = numberOfShots; 	
+		pthread_create(&threads[i], &attr, score, (void *)&args[i]);
+	}
 
+	pthread_attr_destroy(&attr); 
+	for(int i = 0; i<numberOfPlayers; ++i){
+		pthread_join(threads[i], &status); 
+	}
+
+	int highScore = 0; 
+	int winner = 1; 
+
+	for(int i = 0; i< numberOfPlayers-1; ++i){
+		printf("Player %d -> Score %d, ", i+1, scores[i]); 
+		
+		if(scores[i] > highScore){
+			highScore = scores[i]; 
+			winner = i+1; 
+		}
+		
+	}
+	printf("Player %d -> Score %d\n", numberOfPlayers, scores[numberOfPlayers-1]); 
+	if(scores[numberOfPlayers-1] > highScore){
+		highScore = scores[numberOfPlayers-1]; 
+		winner = numberOfPlayers; 
+	}
 	
+	printf("Player %d is the winner with %d points\n", winner, highScore); 
 	
-	
-	
-	
+	pthread_mutex_destroy(&mutexsum); 
+	pthread_exit(NULL);	
+	free(args); 
 	
 	return 0; 
-	
 } 
+
+
+
+
 
 /*
 	REFEREE THREAD
