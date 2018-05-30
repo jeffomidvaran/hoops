@@ -17,10 +17,7 @@ struct Args{
 };
 
 void * score(void * a){
-	
 	struct Args * arg = (struct Args * ) a; 
-	
-	
 	bool shotmade = NULL; 
 	bool threePointer = NULL;  
 	srand(time(NULL));
@@ -72,35 +69,29 @@ int main(int argc, char *argv[]) {
 	}
 
 	int highScore = 0; 
-	int winner = 1; 
 
+	// print all scores 
 	for(int i = 0; i< numberOfPlayers-1; ++i){
 		printf("Player %d -> Score %d, ", i+1, scores[i]); 
-		
-		if(scores[i] > highScore){
+		if(scores[i] > highScore)
 			highScore = scores[i]; 
-			winner = i+1; 
-		}
-		
 	}
-	printf("Player %d -> Score %d\n", numberOfPlayers, scores[numberOfPlayers-1]); 
+	printf("Player %d -> Score %d\n", numberOfPlayers, scores[numberOfPlayers-1]);
+	
 	if(scores[numberOfPlayers-1] > highScore){
 		highScore = scores[numberOfPlayers-1]; 
-		winner = numberOfPlayers; 
 	}
 	
-	printf("Player %d is the winner with %d points\n", winner, highScore); 
-	
+	for(int i = 0; i<numberOfPlayers-1; ++i ){
+		if(scores[i] == highScore)
+			printf("Player %d is a winner with %d points\n", i+1, highScore); 
+	}
 	pthread_mutex_destroy(&mutexsum); 
 	pthread_exit(NULL);	
 	free(args); 
 	
 	return 0; 
 } 
-
-
-
-
 
 /*
 	REFEREE THREAD
@@ -115,7 +106,3 @@ int main(int argc, char *argv[]) {
 		shoot once every second
 		at the end of T "join" 
 */
-
-
-
-
